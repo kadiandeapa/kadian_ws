@@ -1,0 +1,7 @@
+<launch>
+    <param name="ch5_pcl_cloud_load_and_vis_node/pcd_path" value="/home/zy/kadian_ws/data/ch5/map_example.pcd"/>
+
+    <node name="ch5_pcl_cloud_load_and_vis_node" 
+        pkg="ch5" type="ch5_pcl_cloud_load_and_vis_node" output="screen" />
+
+</launch>
