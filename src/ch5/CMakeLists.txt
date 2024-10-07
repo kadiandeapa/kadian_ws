@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.0.2)
 project(ch5)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
-add_compile_options(-std=c++11)
+add_compile_options(-std=c++17)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -14,7 +14,11 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
 )
 
+# 查找 PCL 的依赖包
 find_package(PCL REQUIRED)
+
+# 查找 OpenCV 的依赖包
+find_package(OpenCV REQUIRED)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -123,12 +127,13 @@ include_directories(
   include
   ${catkin_INCLUDE_DIRS}
   ${PCL_INCLUDE_DIRS}
+  ${OpenCV_INCLUDE_DIRS}  # 添加 OpenCV 的包含目录
 )
 
 # 将 PCL 的依赖库链接到目标
 link_directories(${PCL_LIBRARY_DIRS})
 
-# 生成可执行文件
+# 生成pcl_cloud_load_and_vis_node可执行文件
 add_executable(${PROJECT_NAME}_pcl_cloud_load_and_vis_node 
   src/point_cloud_load_and_vis.cc
 )
@@ -141,6 +146,23 @@ add_dependencies(${PROJECT_NAME}_pcl_cloud_load_and_vis_node
 target_link_libraries(${PROJECT_NAME}_pcl_cloud_load_and_vis_node
   ${catkin_LIBRARIES}
   ${PCL_LIBRARIES}
+)
+
+
+# 生成pcd_to_bird_eye_node可执行文件
+add_executable(${PROJECT_NAME}_pcd_to_bird_eye_node
+  src/pcd_to_bird_eye.cc
+)
+
+add_dependencies(${PROJECT_NAME}_pcd_to_bird_eye_node
+  ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS}  
+)
+
+# 链接 catkin 库和 PCL 库 和 OPENCV 库 
+target_link_libraries(${PROJECT_NAME}_pcd_to_bird_eye_node
+  ${catkin_LIBRARIES}
+  ${PCL_LIBRARIES}
+  ${OpenCV_LIBRARIES}  # 添加 OpenCV 的链接库
 )
 
 ## Declare a C++ library

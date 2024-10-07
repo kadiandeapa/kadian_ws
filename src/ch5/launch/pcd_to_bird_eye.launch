@@ -1,0 +1,7 @@
+<launch>
+    <param name="ch5_pcd_to_bird_eye_node/pcd_path" value="/home/zy/kadian_ws/data/ch5/map_example.pcd"/>
+
+    <node name="ch5_pcd_to_bird_eye_node" 
+        pkg="ch5" type="ch5_pcd_to_bird_eye_node" output="screen" />
+
+</launch>
