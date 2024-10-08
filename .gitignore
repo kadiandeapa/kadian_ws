@@ -7,3 +7,5 @@ thirdparty/
 dataset/
 test.cpp
 a.out
+.vscode/
+src/CMakeLists.txt
