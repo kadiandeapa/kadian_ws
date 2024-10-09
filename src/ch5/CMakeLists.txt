@@ -12,6 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
   pcl_ros
   roscpp
   sensor_msgs
+  gtest
 )
 
 # 查找 PCL 的依赖包
@@ -19,6 +20,9 @@ find_package(PCL REQUIRED)
 
 # 查找 OpenCV 的依赖包
 find_package(OpenCV REQUIRED)
+
+# 并行编程库
+find_package(TBB REQUIRED)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -109,9 +113,11 @@ find_package(OpenCV REQUIRED)
 ## LIBRARIES: libraries you create in this project that dependent projects also need
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
+
+# 引入所需的头文件路径
 catkin_package(
   INCLUDE_DIRS include
-  LIBRARIES ch5
+  LIBRARIES ch5 
   CATKIN_DEPENDS pcl_conversions pcl_ros roscpp sensor_msgs
 #  DEPENDS system_lib
 )
