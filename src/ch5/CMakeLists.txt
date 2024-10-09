@@ -12,7 +12,6 @@ find_package(catkin REQUIRED COMPONENTS
   pcl_ros
   roscpp
   sensor_msgs
-  gtest
 )
 
 # 查找 PCL 的依赖包
@@ -21,8 +20,6 @@ find_package(PCL REQUIRED)
 # 查找 OpenCV 的依赖包
 find_package(OpenCV REQUIRED)
 
-# 并行编程库
-find_package(TBB REQUIRED)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -116,7 +113,7 @@ find_package(TBB REQUIRED)
 
 # 引入所需的头文件路径
 catkin_package(
-  INCLUDE_DIRS include
+  INCLUDE_DIRS include 
   LIBRARIES ch5 
   CATKIN_DEPENDS pcl_conversions pcl_ros roscpp sensor_msgs
 #  DEPENDS system_lib
@@ -134,7 +131,10 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
   ${PCL_INCLUDE_DIRS}
   ${OpenCV_INCLUDE_DIRS}  # 添加 OpenCV 的包含目录
+  ../                     # common
+  /home/zy/kadian_ws/thirdparty/sophus
 )
+
 
 # 将 PCL 的依赖库链接到目标
 link_directories(${PCL_LIBRARY_DIRS})
@@ -169,6 +169,21 @@ target_link_libraries(${PROJECT_NAME}_pcd_to_bird_eye_node
   ${catkin_LIBRARIES}
   ${PCL_LIBRARIES}
   ${OpenCV_LIBRARIES}  # 添加 OpenCV 的链接库
+)
+
+add_executable(
+  ${PROJECT_NAME}_test_nn_node
+  src/test_nn.cc
+)
+
+add_dependencies(${PROJECT_NAME}_test_nn_node
+  ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS}  
+)
+
+# 链接 catkin 库和 PCL 库 和 OPENCV 库 
+target_link_libraries(${PROJECT_NAME}_test_nn_node
+  ${catkin_LIBRARIES}
+  gtest pthread glog gflags ${PCL_LIBRARIES} tbb 
 )
 
 ## Declare a C++ library

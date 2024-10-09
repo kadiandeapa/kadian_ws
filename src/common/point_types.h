@@ -9,7 +9,7 @@
 #include <pcl/point_types.h>
 #include <pcl/impl/pcl_base.hpp>
 
-#include "common/eigen_types.h"
+#include "eigen_types.h"
 
 namespace sad {
 
