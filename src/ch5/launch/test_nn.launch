@@ -1,0 +1,10 @@
+<launch>
+    <param name="ch5_test_nn_node/first_pcd_path" 
+        value="/home/zy/kadian_ws/data/ch5/first.pcd"/>
+    <param name="ch5_test_nn_node/second_pcd_path" 
+        value="/home/zy/kadian_ws/data/ch5/second.pcd"/>
+
+    <param name="/use_sim_time" value="true" />
+    <node name="ch5_test_nn_node"
+        pkg="ch5" type="ch5_test_nn_node"  output="screen" args="--gtest_filter=CH5_TEST.BFNN" />
+</launch>

@@ -173,6 +173,8 @@ target_link_libraries(${PROJECT_NAME}_pcd_to_bird_eye_node
 
 add_executable(
   ${PROJECT_NAME}_test_nn_node
+  ../common/point_cloud_utils.cc
+  src/bfnn.cc
   src/test_nn.cc
 )
 
