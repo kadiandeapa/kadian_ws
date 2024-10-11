@@ -96,6 +96,7 @@ inline bool less_vec<3>::operator()(const Eigen::Matrix<int, 3, 1>& v1, const Ei
     return v1[0] < v2[0] || (v1[0] == v2[0] && v1[1] < v2[1]) || (v1[0] == v2[0] && v1[1] == v2[1] && v1[2] < v2[2]);
 }
 
+// 这个函数为一个二维整型向量生成一个哈希值，哈希值的范围为 0 到 9999999 之间。它是通过将每个元素乘以不同的素数并对结果进行异或操作实现的。
 /// @see Optimized Spatial Hashing for Collision Detection of Deformable Objects, Matthias Teschner et. al., VMV 2003
 template <>
 inline size_t hash_vec<2>::operator()(const Eigen::Matrix<int, 2, 1>& v) const {

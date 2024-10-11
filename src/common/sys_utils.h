@@ -14,7 +14,7 @@ namespace sad {
 
 /**
  * 统计代码运行时间
- * @tparam FuncT
+ * @tparam FuncT  FuncT&& func 是一个万能引用，可以接受左值或右值的函数对象。
  * @param func  被调用函数
  * @param func_name 函数名
  * @param times 调用次数

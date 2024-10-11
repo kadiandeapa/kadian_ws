@@ -21,6 +21,7 @@ find_package(PCL REQUIRED)
 find_package(OpenCV REQUIRED)
 
 
+
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 
@@ -185,7 +186,12 @@ add_dependencies(${PROJECT_NAME}_test_nn_node
 # 链接 catkin 库和 PCL 库 和 OPENCV 库 
 target_link_libraries(${PROJECT_NAME}_test_nn_node
   ${catkin_LIBRARIES}
-  gtest pthread glog gflags ${PCL_LIBRARIES} tbb 
+  gtest pthread glog gflags ${PCL_LIBRARIES} 
+  # tbb
+  /usr/local/tbb-2019_U3/lib/libtbb.so.2
+  /usr/local/tbb-2019_U3/lib/libtbbmalloc.so.2
+  /usr/local/tbb-2019_U3/lib/libtbbmalloc_proxy.so.2
+
 )
 
 ## Declare a C++ library

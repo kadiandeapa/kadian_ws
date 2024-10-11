@@ -47,6 +47,14 @@ TEST(CH5_TEST, BFNN)
         "暴力匹配（单线程）", 5
     );
 
+    sad::evaluate_and_call(
+        [&first, &second]() {
+            std::vector<std::pair<size_t, size_t>> matches;
+            sad::bfnn_cloud_mt(first, second, matches);
+        },
+        "暴力匹配（多线程）", 5
+    ); 
+
     SUCCEED();
 }
 
