@@ -59,7 +59,7 @@ class GridNN {
     
     private:
         float resolution_ = 0.1;    //分辨率
-        float inv_resolution = 10;  //分辨率倒数
+        float inv_resolution_ = 10;  //分辨率倒数
 
         NearbyType nearby_type_ = NearbyType::NEARBY4;
 
@@ -78,7 +78,7 @@ class GridNN {
 
 // 将给定的浮点型点坐标转换为网格坐标（整数坐标）
 template <int dim>
-Eigen::Matrix<int, dim, 1> GridNN::Pos2Grid(const Eigen::Matrix<float, dim, 1>& pt){
+Eigen::Matrix<int, dim, 1> GridNN<dim>::Pos2Grid(const Eigen::Matrix<float, dim, 1>& pt){
     return pt.array().template round().template cast<int>();
     // Eigen::Matrix<int, dim, 1> ret;
     // for (int i = 0; i < dim; ++i) {
