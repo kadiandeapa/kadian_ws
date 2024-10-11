@@ -76,6 +76,7 @@ class GridNN {
 
 };
 
+// 将给定的浮点型点坐标转换为网格坐标（整数坐标）
 template <int dim>
 Eigen::Matrix<int, dim, 1> GridNN::Pos2Grid(const Eigen::Matrix<float, dim, 1>& pt){
     return pt.array().template round().template cast<int>();
