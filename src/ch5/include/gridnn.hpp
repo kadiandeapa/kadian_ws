@@ -3,8 +3,10 @@
 
 #include "common/eigen_types.h"
 #include "common/point_types.h"
+#include "common/math_utils.h"
 #include <glog/logging.h>
 #include <execution>
+#include "bfnn.h"
 
 namespace sad
 {
@@ -53,9 +55,15 @@ class GridNN {
             GenerateNearbyGrids();
         }
 
+        /// 设置点云，建立栅格
+        bool SetPointCloud(CloudPtr cloud);
+
         // 获取最近邻
         bool GetClosestPoint(const PointType& pt, PointType& closest_pt, size_t& idx);
 
+        /// 对比两个点云
+        bool GetClosestPointForCloud(CloudPtr ref, CloudPtr query, std::vector<std::pair<size_t, size_t>>& matches);
+        bool GetClosestPointForCloudMT(CloudPtr ref, CloudPtr query, std::vector<std::pair<size_t, size_t>>& matches);
     
     private:
         float resolution_ = 0.1;    //分辨率
@@ -76,10 +84,34 @@ class GridNN {
 
 };
 
+// 实现
+template <int dim>
+bool GridNN<dim>::SetPointCloud(CloudPtr cloud) {
+    std::vector<size_t> index(cloud->size());
+    std::for_each(index.begin(), index.end(), [idx = 0](size_t& i) mutable { i = idx++; });
+
+    //this：捕获当前类实例的 this 指针，确保能够在 lambda 表达式内访问
+    //类的私有成员函数和成员变量（比如 grids_ 和 Pos2Grid）。
+    std::for_each(index.begin(), index.end(), [&cloud, this](const size_t& idx) {
+        auto pt = cloud->points[idx];
+        auto key = Pos2Grid(ToEigen<float, dim>(pt));
+        if (grids_.find(key) == grids_.end()) {
+            grids_.insert({key, {idx}});
+        } else {
+            grids_[key].emplace_back(idx);
+        }
+    });
+
+    cloud_ = cloud;
+    LOG(INFO) << "grids: " << grids_.size();
+    return true;
+}
+
 // 将给定的浮点型点坐标转换为网格坐标（整数坐标）
 template <int dim>
 Eigen::Matrix<int, dim, 1> GridNN<dim>::Pos2Grid(const Eigen::Matrix<float, dim, 1>& pt){
-    return pt.array().template round().template cast<int>();
+    //return pt.array().template round().template cast<int>();  //round()和cast()是eigen的模板函数，在模板成员函数中，需要用template关键词显式地声明他俩是模板函数
+    return (pt * inv_resolution_).template cast<int>();
     // Eigen::Matrix<int, dim, 1> ret;
     // for (int i = 0; i < dim; ++i) {
     //     ret(i, 0) = round(pt[i] * inv_resolution_);
@@ -112,11 +144,79 @@ void GridNN<3>::GenerateNearbyGrids() {
 }
 
 template <int dim>
-bool GetClosestPoint(const PointType& pt, PointType& closest_pt, size_t& idx){
+bool GridNN<dim>::GetClosestPoint(const PointType& pt, PointType& closest_pt, size_t& idx){
     // 在pt栅格周边寻找最近邻
     std::vector<size_t> idx_to_check;
-    auto key = Pos2Grid()
+    auto key = Pos2Grid(ToEigen<float, dim>(pt));
+
+    std::for_each(nearby_grids_.begin(), nearby_grids_.end(), [&key, &idx_to_check, this](const KeyType& delta) {
+        auto dkey = key + delta;   //key
+        auto iter = grids_.find(dkey);    //value
+        if (iter != grids_.end()) {
+            idx_to_check.insert(idx_to_check.end(), iter->second.begin(), iter->second.end());
+        }
+
+    });
+
+    if (idx_to_check.empty()) {
+        return false;
+    }
+
+    // brute force nn in cloud_[idx]
+    CloudPtr nearby_cloud(new PointCloudType);
+    std::vector<size_t> nearby_idx;
+    for (auto& idx : idx_to_check) {
+        nearby_cloud->points.template emplace_back(cloud_->points[idx]);
+        nearby_idx.emplace_back(idx);
+    }
+
+    size_t closest_point_idx = bfnn_point(nearby_cloud, ToVec3f(pt));
+    idx = nearby_idx.at(closest_point_idx);
+    closest_pt = cloud_->points[idx];
+
+    return true;
+}   
+
+template <int dim>
+bool GridNN<dim>::GetClosestPointForCloud(CloudPtr ref, CloudPtr query,
+                                          std::vector<std::pair<size_t, size_t>>& matches){
+    matches.clear();
+    std::vector<size_t> index(query->size());
+    std::for_each(index.begin(), index.end(), [idx = 0](size_t& i) mutable { i = idx++;});
+    std::for_each(index.begin(), index.end(), [this, &matches, &query](const size_t& idx) {
+        PointType cp;
+        size_t cp_idx;
+        if (GetClosestPoint(query->points[idx], cp, cp_idx)) {
+            matches.emplace_back(cp_idx, idx);
+        }
+    });
+
+    return true;                                    
+
 }
+
+template <int dim>
+bool GridNN<dim>::GetClosestPointForCloudMT(CloudPtr ref, CloudPtr query,
+                                            std::vector<std::pair<size_t, size_t>>& matches) {
+    matches.clear();
+    // 与串行版本基本一样，但matches需要预先生成，匹配失败时填入非法匹配
+    std::vector<size_t> index(query->size());
+    std::for_each(index.begin(), index.end(), [idx = 0](size_t& i) mutable { i = idx++; });
+    matches.resize(index.size());
+
+    std::for_each(std::execution::par_unseq, index.begin(), index.end(), [this, &matches, &query](const size_t& idx) {
+        PointType cp;
+        size_t cp_idx;
+        if (GetClosestPoint(query->points[idx], cp, cp_idx)) {
+            matches[idx] = {cp_idx, idx};
+        } else {
+            matches[idx] = {math::kINVALID_ID, math::kINVALID_ID};
+        }
+    });
+
+    return true;
+}
+
     
 } // namespace sad
 
