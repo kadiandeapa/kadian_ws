@@ -8,6 +8,6 @@
     <node name="ch5_test_nn_node"
         pkg="ch5" type="ch5_test_nn_node"  output="screen" 
         
-        args="--gtest_filter=CH5_TEST.GRID_NN"
+        args="--gtest_filter=CH5_TEST.KDTREE_KNN"
     />
 </launch>

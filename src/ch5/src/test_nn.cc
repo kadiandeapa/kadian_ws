@@ -7,7 +7,11 @@
 #include "common/point_types.h"
 #include "common/sys_utils.h"
 #include <pcl/io/pcd_io.h>
+#include <pcl/search/kdtree.h>
+#include <pcl/search/impl/search.hpp>
+
 #include "gridnn.hpp"
+#include "kdtree.h"
 
 DEFINE_string(first_scan_path, "./data/ch5/first.pcd", "第一个点云路径");
 DEFINE_string(second_scan_path, "./data/ch5/second.pcd", "第二个点云路径");
@@ -52,6 +56,98 @@ void EvaluateMatches(const std::vector<std::pair<size_t, size_t>>& truth,
     LOG(INFO) << "precision: " << precision << ", recall: " << recall << ", fp: " << fp << ", fn: " << fn;
 }
 
+TEST(CH5_TEST, KDTREE_BASICS) {
+    sad::CloudPtr cloud(new sad::PointCloudType);
+    sad::PointType p1, p2, p3, p4;
+    p1.x = 0;
+    p1.y = 0;
+    p1.z = 0;
+
+    p2.x = 1;
+    p2.y = 0;
+    p2.z = 0;
+
+    p3.x = 0;
+    p3.y = 1;
+    p3.z = 0;
+
+    p4.x = 1;
+    p4.y = 1;
+    p4.z = 0;
+
+    cloud->points.push_back(p1);
+    cloud->points.push_back(p2);
+    cloud->points.push_back(p3);
+    cloud->points.push_back(p4);
+
+    sad::KdTree kdtree;
+    kdtree.BuildTree(cloud);
+    kdtree.PrintAll();
+
+    SUCCEED();
+}
+
+TEST(CH5_TEST, KDTREE_KNN) {
+    sad::CloudPtr first(new sad::PointCloudType), second(new sad::PointCloudType);
+    pcl::io::loadPCDFile(FLAGS_first_scan_path, *first);
+    pcl::io::loadPCDFile(FLAGS_second_scan_path, *second);
+
+    if (first->empty() || second->empty()) {
+        LOG(ERROR) << "cannot load cloud";
+        FAIL();
+    }
+
+    // voxel grid 至 0.05
+    sad::VoxelGrid(first, 0.5);
+    sad::VoxelGrid(second, 0.5);
+
+    sad::KdTree kdtree;
+    sad::evaluate_and_call([&first, &kdtree]() { kdtree.BuildTree(first); }, "Kd Tree build", 1);
+
+    kdtree.SetEnableANN(true, FLAGS_ANN_alpha);
+
+    LOG(INFO) << "Kd tree leaves: " << kdtree.size() << ", points: " << first->size();
+
+    // 比较 bfnn
+    std::vector<std::pair<size_t, size_t>> true_matches;
+    sad::bfnn_cloud_mt_k(first, second, true_matches);
+
+    // 对第2个点云执行knn
+    std::vector<std::pair<size_t, size_t>> matches;
+    sad::evaluate_and_call([&first, &second, &kdtree, &matches]() { kdtree.GetClosestPointMT(second, matches, 5); },
+                           "Kd Tree 5NN 多线程", 1);
+    EvaluateMatches(true_matches, matches);
+
+    LOG(INFO) << "building kdtree pcl";
+    // 对比PCL
+    pcl::search::KdTree<sad::PointType> kdtree_pcl;
+    sad::evaluate_and_call([&first, &kdtree_pcl]() { kdtree_pcl.setInputCloud(first); }, "Kd Tree build", 1);
+
+    LOG(INFO) << "searching pcl";
+    matches.clear();
+    std::vector<int> search_indices(second->size());
+    for (int i = 0; i < second->points.size(); i++) {
+        search_indices[i] = i;
+    }
+
+    std::vector<std::vector<int>> result_index;
+    std::vector<std::vector<float>> result_distance;
+    sad::evaluate_and_call(
+        [&]() { kdtree_pcl.nearestKSearch(*second, search_indices, 5, result_index, result_distance); },
+        "Kd Tree 5NN in PCL", 1);
+    for (int i = 0; i < second->points.size(); i++) {
+        for (int j = 0; j < result_index[i].size(); ++j) {
+            int m = result_index[i][j];
+            double d = result_distance[i][j];
+            matches.push_back({m, i});
+        }
+    }
+    EvaluateMatches(true_matches, matches);
+
+    LOG(INFO) << "done.";
+
+    SUCCEED();
+}
 
 TEST(CH5_TEST, BFNN)
 {

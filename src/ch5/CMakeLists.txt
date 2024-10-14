@@ -138,7 +138,8 @@ include_directories(
 
 
 # 将 PCL 的依赖库链接到目标
-link_directories(${PCL_LIBRARY_DIRS})
+link_directories(${PCL_LIBRARY_DIRS} 
+                  /usr/local/tbb-2019_U8/lib)
 
 # 生成pcl_cloud_load_and_vis_node可执行文件
 add_executable(${PROJECT_NAME}_pcl_cloud_load_and_vis_node 
@@ -177,6 +178,7 @@ add_executable(
   ../common/point_cloud_utils.cc
   src/bfnn.cc
   src/test_nn.cc
+  src/kdtree.cc
 )
 
 add_dependencies(${PROJECT_NAME}_test_nn_node
@@ -187,10 +189,6 @@ add_dependencies(${PROJECT_NAME}_test_nn_node
 target_link_libraries(${PROJECT_NAME}_test_nn_node
   ${catkin_LIBRARIES}
   gtest pthread glog gflags ${PCL_LIBRARIES} tbb
-  # /usr/local/tbb-2019_U8/lib/libtbb.so.2
-  # /usr/local/tbb-2019_U8/lib/libtbbmalloc.so.2
-  # /usr/local/tbb-2019_U8/lib/libtbbmalloc_proxy.so.2
-
 )
 
 ## Declare a C++ library
