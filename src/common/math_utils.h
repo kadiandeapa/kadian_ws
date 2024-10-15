@@ -121,7 +121,7 @@ bool FitPlane(std::vector<Eigen::Matrix<S, 3, 1>>& data, Eigen::Matrix<S, 4, 1>&
     }
 
     Eigen::JacobiSVD svd(A, Eigen::ComputeThinV);
-    plane_coeffs = svd.matrixV().col(3);
+    plane_coeffs = svd.matrixV().col(3);   //V的最后一列 col(3) 对应于平面方程的解
 
     // check error eps
     for (int i = 0; i < data.size(); ++i) {

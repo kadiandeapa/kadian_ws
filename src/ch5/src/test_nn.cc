@@ -12,6 +12,7 @@
 
 #include "gridnn.hpp"
 #include "kdtree.h"
+#include "octo_tree.h"
 
 DEFINE_string(first_scan_path, "./data/ch5/first.pcd", "第一个点云路径");
 DEFINE_string(second_scan_path, "./data/ch5/second.pcd", "第二个点云路径");
@@ -98,8 +99,8 @@ TEST(CH5_TEST, KDTREE_KNN) {
     }
 
     // voxel grid 至 0.05
-    sad::VoxelGrid(first, 0.5);
-    sad::VoxelGrid(second, 0.5);
+    sad::VoxelGrid(first, 0.05);
+    sad::VoxelGrid(second, 0.05);
 
     sad::KdTree kdtree;
     sad::evaluate_and_call([&first, &kdtree]() { kdtree.BuildTree(first); }, "Kd Tree build", 1);
@@ -278,6 +279,75 @@ TEST(CH5_TEST, GRID_NN) {
     SUCCEED();
 }
 
+TEST(CH5_TEST, OCTREE_BASICS) {
+    sad::CloudPtr cloud(new sad::PointCloudType);
+    sad::PointType p1, p2, p3, p4;
+    p1.x = 0;
+    p1.y = 0;
+    p1.z = 0;
+
+    p2.x = 1;
+    p2.y = 0;
+    p2.z = 0;
+
+    p3.x = 0;
+    p3.y = 1;
+    p3.z = 0;
+
+    p4.x = 1;
+    p4.y = 1;
+    p4.z = 0;
+
+    cloud->points.push_back(p1);
+    cloud->points.push_back(p2);
+    cloud->points.push_back(p3);
+    cloud->points.push_back(p4);
+
+    sad::OctoTree octree;
+    octree.BuildTree(cloud);
+    octree.SetApproximate(false);
+    LOG(INFO) << "Octo tree leaves: " << octree.size() << ", points: " << cloud->size();
+
+    SUCCEED();
+}
+
+TEST(CH5_TEST, OCTREE_KNN) {
+    sad::CloudPtr first(new sad::PointCloudType), second(new sad::PointCloudType);
+    pcl::io::loadPCDFile(FLAGS_first_scan_path, *first);
+    pcl::io::loadPCDFile(FLAGS_second_scan_path, *second);
+
+    if (first->empty() || second->empty()) {
+        LOG(ERROR) << "cannot load cloud";
+        FAIL();
+    }
+
+    // voxel grid 至 0.05
+    sad::VoxelGrid(first);
+    sad::VoxelGrid(second);
+
+    sad::OctoTree octree;
+    sad::evaluate_and_call([&first, &octree]() { octree.BuildTree(first); }, "Octo Tree build", 1);
+
+    octree.SetApproximate(true, FLAGS_ANN_alpha);
+    LOG(INFO) << "Octo tree leaves: " << octree.size() << ", points: " << first->size();
+
+    /// 测试KNN
+    LOG(INFO) << "testing knn";
+    std::vector<std::pair<size_t, size_t>> matches;
+    sad::evaluate_and_call([&first, &second, &octree, &matches]() { octree.GetClosestPointMT(second, matches, 5); },
+                           "Octo Tree 5NN 多线程", 1);
+
+    LOG(INFO) << "comparing with bfnn";
+    /// 比较真值
+    std::vector<std::pair<size_t, size_t>> true_matches;
+    sad::bfnn_cloud_mt_k(first, second, true_matches);
+    EvaluateMatches(true_matches, matches);
+
+    LOG(INFO) << "done.";
+
+    SUCCEED();
+}
+
 int main(int argc, char** argv)
 {
     //初始化ros
@@ -287,10 +357,11 @@ int main(int argc, char** argv)
     // 从参数服务器中获取参数并存储在普通字符串变量中
     std::string param_first_scan_path;
     std::string param_second_scan_path;
+    double param_ANN_alpha;
 
     private_nh.param<std::string>("first_pcd_path", param_first_scan_path, "first.pcd");
     private_nh.param<std::string>("second_pcd_path", param_second_scan_path, "second.pcd");
-
+    private_nh.param<double>("ANN_alpha", param_ANN_alpha, 1.0);
     // 如果从参数服务器中获取的参数和 gflags 的参数不同，则进行更新
     if (param_first_scan_path != FLAGS_first_scan_path) {
         FLAGS_first_scan_path = param_first_scan_path;
@@ -300,6 +371,11 @@ int main(int argc, char** argv)
         FLAGS_second_scan_path = param_second_scan_path;
         ROS_INFO("Updated first_scan_path to: %s", FLAGS_second_scan_path.c_str());
     }
+    if (param_ANN_alpha != FLAGS_ANN_alpha) {
+        FLAGS_ANN_alpha = param_ANN_alpha;
+        ROS_INFO("Updated ANN_alpha to: %.2f", FLAGS_ANN_alpha);
+    }
+
 
     // 初始化 Google Logging 库
     google::InitGoogleLogging(argv[0]);

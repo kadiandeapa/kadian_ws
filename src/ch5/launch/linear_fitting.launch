@@ -1,0 +1,4 @@
+<launch>
+    <node name="ch5_linear_fitting_node"
+        pkg="ch5" type="ch5_linear_fitting_node"  output="screen" />
+</launch>

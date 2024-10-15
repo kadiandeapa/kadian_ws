@@ -173,23 +173,43 @@ target_link_libraries(${PROJECT_NAME}_pcd_to_bird_eye_node
   ${OpenCV_LIBRARIES}  # 添加 OpenCV 的链接库
 )
 
+# -----------------------test node------------------------
 add_executable(
   ${PROJECT_NAME}_test_nn_node
   ../common/point_cloud_utils.cc
   src/bfnn.cc
   src/test_nn.cc
   src/kdtree.cc
+  src/octo_tree.cc
 )
 
 add_dependencies(${PROJECT_NAME}_test_nn_node
   ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS}  
 )
 
-# 链接 catkin 库和 PCL 库 和 OPENCV 库 
 target_link_libraries(${PROJECT_NAME}_test_nn_node
   ${catkin_LIBRARIES}
   gtest pthread glog gflags ${PCL_LIBRARIES} tbb
 )
+
+# ---------------------linear-fitting---------------------
+add_executable(
+  ${PROJECT_NAME}_linear_fitting_node
+  src/linear_fitting.cc
+
+)
+
+add_dependencies(${PROJECT_NAME}_linear_fitting_node
+  ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS}  
+)
+
+target_link_libraries(${PROJECT_NAME}_linear_fitting_node
+  ${catkin_LIBRARIES}
+  ${PCL_LIBRARIES}
+  ${OpenCV_LIBRARIES} 
+  glog gflags  
+)
+
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
