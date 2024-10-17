@@ -72,7 +72,7 @@ void MpcLocalPlannerROS::initialize(std::string name, tf::TransformListener* tf,
     if (!_initialized)
     {
         // create Node Handle with name of plugin (as used in move_base for loading)
-        ros::NodeHandle nh("~/" + name);
+        ros::NodeHandle nh("~/" + name); 
 
         // load plugin related main parameters
         nh.param("controller/xy_goal_tolerance", _params.xy_goal_tolerance, _params.xy_goal_tolerance);
